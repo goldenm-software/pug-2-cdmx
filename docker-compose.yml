@@ -1,0 +1,71 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: listen_notify
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: demo_db
+    ports:
+      - "5555:5432"
+    volumes:
+      - ./dbdata:/var/lib/postgresql/data
+    
+    networks:
+      - local-network
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U listen_notify -d demo_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  python:
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+
+    networks:
+      - local-network
+    
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=demo_db
+      - DATABASE_USER=listen_notify
+      - DATABASE_PASSWORD=123456
+
+  dart:
+    build:
+      context: ./dart
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+
+    networks:
+      - local-network
+
+  go:
+    build:
+      context: ./go
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+
+    networks:
+      - local-network
+
+  sender:
+    build:
+      context: ./sender
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+
+    networks:
+      - local-network
+
+networks:
+  local-network:
